@@ -1,0 +1,98 @@
+@using System
+@using System.Text.Json
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+@using Soenneker.Blazor.Rrweb.Replay.Abstract
+@using Soenneker.Blazor.Rrweb.Replay.Configuration
+@implements IAsyncDisposable
+@inject IRrwebReplayInterop ReplayInterop
+
+<div @ref="_element" class="@Class" style="@Style"></div>
+
+@code {
+    private readonly string _id = Guid.NewGuid().ToString("N");
+    private ElementReference _element;
+    private JsonElement[]? _renderedEvents;
+    private RrwebReplayOptions? _renderedOptions;
+    private bool _created;
+    private bool _disposed;
+
+    /// <summary>The complete recording. Replace the array to load a different session.</summary>
+    [Parameter, EditorRequired]
+    public JsonElement[] Events { get; set; } = [];
+
+    /// <summary>Replay configuration. Replace the instance to rebuild the player.</summary>
+    [Parameter]
+    public RrwebReplayOptions Options { get; set; } = new();
+
+    /// <summary>Whether to use pinned CDN assets instead of bundled assets.</summary>
+    [Parameter]
+    public bool UseCdn { get; set; } = true;
+
+    /// <summary>Starts playback automatically when a recording is loaded.</summary>
+    [Parameter]
+    public bool AutoPlay { get; set; }
+
+    /// <summary>CSS classes for the replay host.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>Inline styles for the replay host.</summary>
+    [Parameter]
+    public string? Style { get; set; }
+
+    /// <summary>Invoked after a replayer has been created.</summary>
+    [Parameter]
+    public EventCallback OnReady { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed || (ReferenceEquals(Events, _renderedEvents) && ReferenceEquals(Options, _renderedOptions)))
+            return;
+
+        if (_created)
+        {
+            await ReplayInterop.Destroy(_id);
+            _created = false;
+        }
+
+        JsonElement[] events = Events;
+        RrwebReplayOptions options = Options;
+        _renderedEvents = events;
+        _renderedOptions = options;
+        if (events.Length < 2 && !options.LiveMode)
+            return;
+
+        await ReplayInterop.Create(_id, _element, events, options, UseCdn);
+        if (_disposed)
+        {
+            await ReplayInterop.Destroy(_id);
+            return;
+        }
+
+        _created = true;
+        if (AutoPlay)
+            await ReplayInterop.Play(_id);
+        await OnReady.InvokeAsync();
+    }
+
+    /// <summary>Plays or resumes the current session, optionally seeking to a millisecond offset.</summary>
+    public ValueTask Play(double? timeOffset = null) => ReplayInterop.Play(_id, timeOffset);
+
+    /// <summary>Pauses the current session, optionally seeking to a millisecond offset.</summary>
+    public ValueTask Pause(double? timeOffset = null) => ReplayInterop.Pause(_id, timeOffset);
+
+    /// <summary>Changes the playback speed multiplier.</summary>
+    public ValueTask SetSpeed(double speed) => ReplayInterop.SetSpeed(_id, speed);
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        if (!_created) return;
+        try { await ReplayInterop.Destroy(_id); }
+        catch (JSDisconnectedException) { }
+        catch (ObjectDisposedException) { }
+    }
+}

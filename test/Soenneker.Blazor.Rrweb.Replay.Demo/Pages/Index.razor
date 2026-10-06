@@ -1,0 +1,70 @@
+@page "/"
+@using System
+@using System.Linq
+@using System.Text.Json
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components.Forms
+@using Soenneker.Blazor.Rrweb.Replay
+
+<PageTitle>rrweb replay</PageTitle>
+<h1>Replay a browser session</h1>
+<p>Paste the JSON array from the recording demo or select a saved JSON file.</p>
+<label for="events-json">Recording JSON</label>
+<textarea id="events-json" @bind="_json" style="display:block;width:100%;height:12rem;"></textarea>
+<InputFile OnChange="LoadFile" accept=".json,application/json" />
+<button @onclick="Load">Load recording</button>
+<p role="status">@_status</p>
+<div style="display:flex;gap:1rem;margin:1rem 0;">
+    <button @onclick="Play" disabled="@(!_ready)">Play / resume</button>
+    <button @onclick="Pause" disabled="@(!_ready)">Pause</button>
+    <button @onclick="Restart" disabled="@(!_ready)">Restart</button>
+    <button @onclick="Faster" disabled="@(!_ready)">2x speed</button>
+    <button @onclick="Normal" disabled="@(!_ready)">1x speed</button>
+</div>
+<RrwebReplay @ref="_player" Events="_events" UseCdn="false" OnReady="Ready" Style="overflow:auto;max-height:70vh;" />
+
+@code {
+    private RrwebReplay? _player;
+    private JsonElement[] _events = [];
+    private string _json = "";
+    private string _status = "No recording loaded.";
+    private bool _ready;
+
+    private void Load()
+    {
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(_json);
+            if (document.RootElement.ValueKind != JsonValueKind.Array || document.RootElement.GetArrayLength() < 2)
+                throw new InvalidOperationException("Provide an array containing at least two rrweb events.");
+            _events = document.RootElement.EnumerateArray().Select(e => e.Clone()).ToArray();
+            _ready = false;
+            _status = $"Loading {_events.Length} events...";
+        }
+        catch (Exception ex) { _status = ex.Message; }
+    }
+
+    private async Task LoadFile(InputFileChangeEventArgs args)
+    {
+        try
+        {
+            using var reader = new System.IO.StreamReader(args.File.OpenReadStream(20 * 1024 * 1024));
+            _json = await reader.ReadToEndAsync();
+            Load();
+        }
+        catch (Exception ex) { _status = ex.Message; }
+    }
+
+    private void Ready() { _ready = true; _status = $"Loaded {_events.Length} events."; }
+    private async Task Play() => await Control(() => _player!.Play());
+    private async Task Pause() => await Control(() => _player!.Pause());
+    private async Task Restart() => await Control(() => _player!.Play(0));
+    private async Task Faster() => await Control(() => _player!.SetSpeed(2));
+    private async Task Normal() => await Control(() => _player!.SetSpeed(1));
+
+    private async Task Control(Func<ValueTask> action)
+    {
+        try { await action(); }
+        catch (Exception ex) { _status = ex.Message; }
+    }
+}
