@@ -22,8 +22,61 @@ export function createInterop() {
     function destroy(id) {
         const entry = players.get(id);
         if (!entry) return;
-        try { entry.player.destroy(); }
-        finally { players.delete(id); }
+        try { entry.stopFitting?.(); }
+        finally {
+            try { entry.player.destroy(); }
+            finally { players.delete(id); }
+        }
+    }
+
+    function setFitToContainer(id, enabled) {
+        const entry = get(id);
+        entry.stopFitting?.();
+        entry.stopFitting = null;
+        if (!enabled) return;
+        const host = entry.root;
+        const replay = host.querySelector('.replayer-wrapper');
+        const iframe = replay?.querySelector('iframe');
+        if (!iframe) throw new Error('The replay viewport is not available.');
+        const hostProperties = ['height', 'overflow', 'minWidth', 'width'];
+        const replayProperties = ['transform', 'transformOrigin', 'marginLeft', 'width'];
+        const hostStyles = hostProperties.map(property => host.style[property]);
+        const replayStyles = replayProperties.map(property => replay.style[property]);
+        let frame = 0;
+        host.style.overflow = 'hidden';
+        host.style.minWidth = '0';
+        host.style.width = '100%';
+        const fit = () => {
+            frame = 0;
+            const width = iframe.offsetWidth;
+            const height = iframe.offsetHeight;
+            const available = host.clientWidth;
+            if (!width || !height || !available) return;
+            const scale = Math.min(1, available / width);
+            replay.style.width = `${width}px`;
+            replay.style.transformOrigin = 'top left';
+            replay.style.transform = `scale(${scale})`;
+            replay.style.marginLeft = `${Math.max(0, (available - width * scale) / 2)}px`;
+            host.style.height = `${height * scale}px`;
+        };
+        const observer = new ResizeObserver(() => {
+            if (!frame) frame = requestAnimationFrame(fit);
+        });
+        entry.stopFitting = () => {
+            observer.disconnect();
+            cancelAnimationFrame(frame);
+            hostProperties.forEach((property, index) => { host.style[property] = hostStyles[index]; });
+            replayProperties.forEach((property, index) => { replay.style[property] = replayStyles[index]; });
+        };
+        try {
+            observer.observe(host);
+            observer.observe(iframe);
+            fit();
+        } catch (error) {
+            entry.stopFitting();
+            entry.stopFitting = null;
+            throw error;
+        }
     }
 
     return {
@@ -41,7 +94,7 @@ export function createInterop() {
             events.forEach(validateEvent);
             events.sort((a, b) => a.timestamp - b.timestamp);
             const player = new Replayer(events, { ...options, root });
-            players.set(id, { player, liveMode: !!options.liveMode });
+            players.set(id, { player, root, liveMode: !!options.liveMode, stopFitting: null });
         },
         play(id, offset) {
             validateOffset(offset);
@@ -57,6 +110,7 @@ export function createInterop() {
             if (!Number.isFinite(speed) || speed <= 0) throw new Error("Replay speed must be positive.");
             get(id).player.setConfig({ speed });
         },
+        setFitToContainer,
         getCurrentTime(id) { return Math.max(0, get(id).player.getCurrentTime()); },
         getDuration(id) { return get(id).player.getMetaData().totalTime; },
         addEvent(id, eventJson) {

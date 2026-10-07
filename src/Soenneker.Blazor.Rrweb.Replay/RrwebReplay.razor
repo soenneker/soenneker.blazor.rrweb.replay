@@ -15,6 +15,7 @@
     private JsonElement[]? _renderedEvents;
     private RrwebReplayOptions? _renderedOptions;
     private bool _created;
+    private bool _renderedFitToContainer;
     private ValueAtomicBool _disposed;
 
     /// <summary>The complete recording. Replace the array to load a different session.</summary>
@@ -33,6 +34,10 @@
     [Parameter]
     public bool AutoPlay { get; set; }
 
+    /// <summary>Scales the recording down to fit its container while preserving the recorded page layout. Defaults to false.</summary>
+    [Parameter]
+    public bool FitToContainer { get; set; }
+
     /// <summary>CSS classes for the replay host.</summary>
     [Parameter]
     public string? Class { get; set; }
@@ -47,8 +52,18 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_disposed.Value || (ReferenceEquals(Events, _renderedEvents) && ReferenceEquals(Options, _renderedOptions)))
+        if (_disposed.Value)
             return;
+
+        if (ReferenceEquals(Events, _renderedEvents) && ReferenceEquals(Options, _renderedOptions))
+        {
+            if (_created && FitToContainer != _renderedFitToContainer)
+            {
+                _renderedFitToContainer = FitToContainer;
+                await ReplayInterop.SetFitToContainer(_id, _renderedFitToContainer);
+            }
+            return;
+        }
 
         if (_created)
         {
@@ -71,6 +86,9 @@
         }
 
         _created = true;
+        _renderedFitToContainer = FitToContainer;
+        if (_renderedFitToContainer)
+            await ReplayInterop.SetFitToContainer(_id, true);
         if (AutoPlay)
             await ReplayInterop.Play(_id);
         await OnReady.InvokeAsync();

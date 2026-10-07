@@ -87,6 +87,9 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
     public ValueTask<double> GetCurrentTime(string id, CancellationToken cancellationToken = default)
         => Invoke<double>("getCurrentTime", cancellationToken, id);
 
+    public ValueTask SetFitToContainer(string id, bool enabled, CancellationToken cancellationToken = default)
+        => InvokeVoid("setFitToContainer", cancellationToken, id, enabled);
+
     public ValueTask<double> GetDuration(string id, CancellationToken cancellationToken = default)
         => Invoke<double>("getDuration", cancellationToken, id);
 

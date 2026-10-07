@@ -28,6 +28,11 @@ public interface IRrwebReplayInterop : IAsyncDisposable
     /// <summary>Changes playback speed to a finite positive multiplier.</summary>
     ValueTask SetSpeed(string id, double speed, CancellationToken cancellationToken = default);
 
+    /// <summary>Scales the recorded viewport down to fit its host without reflowing the recorded page or upscaling.
+    /// Observes container and recorded viewport size changes. Disabling restores the original styles;
+    /// destroying the player also disconnects observers and restores styles. The host must have a constrained available width.</summary>
+    ValueTask SetFitToContainer(string id, bool enabled, CancellationToken cancellationToken = default);
+
     /// <summary>Returns the current offset in milliseconds.</summary>
     ValueTask<double> GetCurrentTime(string id, CancellationToken cancellationToken = default);
 
