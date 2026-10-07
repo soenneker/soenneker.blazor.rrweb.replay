@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Soenneker.Asyncs.Initializers;
+using Soenneker.Atomics.ValueBools;
 using Soenneker.Blazor.Utils.ModuleImport.Abstract;
 using Soenneker.Blazor.Utils.ResourceLoader.Abstract;
 using Soenneker.Blazor.Rrweb.Replay.Abstract;
@@ -19,7 +20,7 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
     private readonly IModuleImportUtil _moduleImportUtil;
     private readonly AsyncInitializer<bool> _initializer;
     private IJSObjectReference? _interop;
-    private bool _disposed;
+    private ValueAtomicBool _disposed;
 
     public RrwebReplayInterop(IResourceLoader resourceLoader, IModuleImportUtil moduleImportUtil)
     {
@@ -44,7 +45,7 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
 
     public ValueTask Initialize(bool useCdn = true, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed.Value, this);
         return _initializer.Init(useCdn, cancellationToken);
     }
 
@@ -109,7 +110,7 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
 
     private ValueTask InvokeVoid(string method, CancellationToken cancellationToken, params object?[] args)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed.Value, this);
         if (_interop is null)
             throw new InvalidOperationException("Initialize must be called before this operation.");
         return _interop.InvokeVoidAsync(method, cancellationToken, args);
@@ -117,7 +118,7 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
 
     private ValueTask<T> Invoke<T>(string method, CancellationToken cancellationToken, params object?[] args)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed.Value, this);
         if (_interop is null)
             throw new InvalidOperationException("Initialize must be called before this operation.");
         return _interop.InvokeAsync<T>(method, cancellationToken, args);
@@ -125,8 +126,8 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed) return;
-        _disposed = true;
+        if (!_disposed.CompareAndSet(false, true))
+            return;
         await _initializer.DisposeAsync();
         try
         {

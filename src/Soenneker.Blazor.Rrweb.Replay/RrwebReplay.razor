@@ -1,22 +1,21 @@
-@using System
 @using System.Text.Json
-@using System.Threading.Tasks
-@using Microsoft.AspNetCore.Components
 @using Microsoft.JSInterop
+@using Soenneker.Atomics.ValueBools
 @using Soenneker.Blazor.Rrweb.Replay.Abstract
 @using Soenneker.Blazor.Rrweb.Replay.Configuration
+@using Soenneker.Blazor.Utils.Ids
 @implements IAsyncDisposable
 @inject IRrwebReplayInterop ReplayInterop
 
-<div @ref="_element" class="@Class" style="@Style"></div>
+<div @ref="_element" class="@Class" style="@Style" ></div>
 
 @code {
-    private readonly string _id = Guid.NewGuid().ToString("N");
+    private readonly string _id = BlazorIdGenerator.New("rrwebreplay");
     private ElementReference _element;
     private JsonElement[]? _renderedEvents;
     private RrwebReplayOptions? _renderedOptions;
     private bool _created;
-    private bool _disposed;
+    private ValueAtomicBool _disposed;
 
     /// <summary>The complete recording. Replace the array to load a different session.</summary>
     [Parameter, EditorRequired]
@@ -48,7 +47,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_disposed || (ReferenceEquals(Events, _renderedEvents) && ReferenceEquals(Options, _renderedOptions)))
+        if (_disposed.Value || (ReferenceEquals(Events, _renderedEvents) && ReferenceEquals(Options, _renderedOptions)))
             return;
 
         if (_created)
@@ -65,7 +64,7 @@
             return;
 
         await ReplayInterop.Create(_id, _element, events, options, UseCdn);
-        if (_disposed)
+        if (_disposed.Value)
         {
             await ReplayInterop.Destroy(_id);
             return;
@@ -88,11 +87,21 @@
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed) return;
-        _disposed = true;
-        if (!_created) return;
-        try { await ReplayInterop.Destroy(_id); }
-        catch (JSDisconnectedException) { }
-        catch (ObjectDisposedException) { }
+        if (!_disposed.CompareAndSet(false, true))
+            return;
+        
+        if (!_created)
+            return;
+        try
+        {
+            await ReplayInterop.Destroy(_id);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
+
 }
