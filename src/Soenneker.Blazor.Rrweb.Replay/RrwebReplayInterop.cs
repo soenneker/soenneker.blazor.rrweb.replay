@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System;
 using System.Text.Json;
 using System.Threading;
@@ -119,7 +120,7 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
         return _interop.InvokeVoidAsync(method, cancellationToken, args);
     }
 
-    private ValueTask<T> Invoke<T>(string method, CancellationToken cancellationToken, params object?[] args)
+    private ValueTask<T> Invoke<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties)] T>(string method, CancellationToken cancellationToken, params object?[] args)
     {
         ObjectDisposedException.ThrowIf(_disposed.Value, this);
         if (_interop is null)
