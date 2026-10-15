@@ -48,6 +48,6 @@
         <PackageReference Include="Soenneker.Asyncs.Initializers" Version="4.0.130" />
         <PackageReference Include="Soenneker.Atomics.ValueBools" Version="4.0.54" />
         <PackageReference Include="Soenneker.Blazor.Utils.Ids" Version="4.0.56" />
-        <PackageReference Include="Soenneker.Blazor.Utils.ResourceLoader" Version="4.0.1791" />
+        <PackageReference Include="Soenneker.Blazor.Utils.ResourceLoader" Version="4.0.1792" />
     </ItemGroup>
 </Project>
