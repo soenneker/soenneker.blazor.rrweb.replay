@@ -45,7 +45,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-rc.3.26522.148" />
-        <PackageReference Include="Soenneker.Asyncs.Initializers" Version="11.0.133" />
+        <PackageReference Include="Soenneker.Asyncs.Initializers" Version="11.0.134" />
         <PackageReference Include="Soenneker.Atomics.ValueBools" Version="11.0.55" />
         <PackageReference Include="Soenneker.Blazor.Utils.Ids" Version="11.0.59" />
         <PackageReference Include="Soenneker.Blazor.Utils.ResourceLoader" Version="11.0.1799" />
