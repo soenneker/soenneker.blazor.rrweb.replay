@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Soenneker.Blazor.Extensions.IJSObjectReferences;
 using Soenneker.Asyncs.Initializers;
 using Soenneker.Atomics.ValueBools;
 using Soenneker.Blazor.Utils.ModuleImport.Abstract;
@@ -32,23 +33,16 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
 
     private async ValueTask InitializeResources(bool useCdn, CancellationToken cancellationToken)
     {
-        try
-        {
-            await _resourceLoader.LoadStyle(useCdn
-                    ? "https://cdn.jsdelivr.net/npm/@rrweb/replay@2.1.7/dist/style.min.css"
-                    : "_content/Soenneker.Blazor.Rrweb.Replay/css/rrweb-replay.min.css",
-                    useCdn ? "sha384-2zp5yTttnrewFxGO1gZqarXk4eQ3cDSsWIedGAhaF9GOw1f+TiLoxMFBZGCHow2O" : null, cancellationToken: cancellationToken);
-            await _resourceLoader.LoadScriptAndWaitForVariable(useCdn
-                    ? "https://cdn.jsdelivr.net/npm/@rrweb/replay@2.1.7/dist/replay.umd.min.cjs"
-                    : "_content/Soenneker.Blazor.Rrweb.Replay/js/rrweb-replay.min.js",
-                "rrwebReplay", useCdn ? "sha384-LX0Qc58DtX90qtHq3rjSoGcuLK4GDV3PHOW6PmFdtge6n0wvY8M6dD7L6DGOzNUh" : null, cancellationToken: cancellationToken);
-            IJSObjectReference module = await _moduleImportUtil.GetContentModuleReference(_modulePath, cancellationToken);
-            _interop = await module.InvokeAsync<IJSObjectReference>("createInterop", cancellationToken);
-        }
-        catch (JSException exception)
-        {
-            throw new JSException($"JavaScript operation 'RrwebReplayInterop.InitializeResources' failed: {exception.Message}", exception);
-        }
+        await _resourceLoader.LoadStyle(useCdn
+                ? "https://cdn.jsdelivr.net/npm/@rrweb/replay@2.1.7/dist/style.min.css"
+                : "_content/Soenneker.Blazor.Rrweb.Replay/css/rrweb-replay.min.css",
+                useCdn ? "sha384-2zp5yTttnrewFxGO1gZqarXk4eQ3cDSsWIedGAhaF9GOw1f+TiLoxMFBZGCHow2O" : null, cancellationToken: cancellationToken);
+        await _resourceLoader.LoadScriptAndWaitForVariable(useCdn
+                ? "https://cdn.jsdelivr.net/npm/@rrweb/replay@2.1.7/dist/replay.umd.min.cjs"
+                : "_content/Soenneker.Blazor.Rrweb.Replay/js/rrweb-replay.min.js",
+            "rrwebReplay", useCdn ? "sha384-LX0Qc58DtX90qtHq3rjSoGcuLK4GDV3PHOW6PmFdtge6n0wvY8M6dD7L6DGOzNUh" : null, cancellationToken: cancellationToken);
+        IJSObjectReference module = await _moduleImportUtil.GetContentModuleReference(_modulePath, cancellationToken);
+        _interop = await module.InvokeWithContextAsync<IJSObjectReference>("createInterop", cancellationToken);
     }
 
     public ValueTask Initialize(bool useCdn = true, CancellationToken cancellationToken = default)
@@ -124,14 +118,7 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
         ObjectDisposedException.ThrowIf(_disposed.Value, this);
         if (_interop is null)
             throw new InvalidOperationException("Initialize must be called before this operation.");
-        try
-        {
-            await _interop.InvokeVoidAsync(method, cancellationToken, args);
-        }
-        catch (JSException exception)
-        {
-            throw new JSException($"JavaScript operation 'RrwebReplayInterop.{method}' failed: {exception.Message}", exception);
-        }
+        await _interop.InvokeVoidWithContextAsync(method, cancellationToken, args);
     }
 
     private async ValueTask<T> Invoke<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties)] T>(string method, CancellationToken cancellationToken, params object?[] args)
@@ -139,14 +126,7 @@ public sealed class RrwebReplayInterop : IRrwebReplayInterop
         ObjectDisposedException.ThrowIf(_disposed.Value, this);
         if (_interop is null)
             throw new InvalidOperationException("Initialize must be called before this operation.");
-        try
-        {
-            return await _interop.InvokeAsync<T>(method, cancellationToken, args);
-        }
-        catch (JSException exception)
-        {
-            throw new JSException($"JavaScript operation 'RrwebReplayInterop.{method}' failed: {exception.Message}", exception);
-        }
+        return await _interop.InvokeWithContextAsync<T>(method, cancellationToken, args);
     }
 
     public async ValueTask DisposeAsync()
