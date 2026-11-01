@@ -37,14 +37,6 @@ jobs:
       - name: Get release notes from latest commit
         uses: soenneker/release-notes-from-commits@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Test JavaScript interop
-        run: node --test test/js/*.test.mjs
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:

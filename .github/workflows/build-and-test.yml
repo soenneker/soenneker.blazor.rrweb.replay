@@ -26,14 +26,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Test JavaScript interop
-        run: node --test test/js/*.test.mjs
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:

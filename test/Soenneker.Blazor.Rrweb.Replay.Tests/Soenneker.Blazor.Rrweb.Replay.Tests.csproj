@@ -28,4 +28,7 @@
         <ProjectReference Include="..\..\src\Soenneker.Blazor.Rrweb.Replay\Soenneker.Blazor.Rrweb.Replay.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <PackageReference Include="Soenneker.Node.Util" Version="11.0.396" />
+    </ItemGroup>
 </Project>
