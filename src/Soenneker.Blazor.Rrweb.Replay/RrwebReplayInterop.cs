@@ -17,7 +17,7 @@ namespace Soenneker.Blazor.Rrweb.Replay;
 
 public sealed class RrwebReplayInterop : IRrwebReplayInterop
 {
-    private const string _modulePath = "./_content/Soenneker.Blazor.Rrweb.Replay/js/rrwebreplayinterop.js";
+    private const string _modulePath = "./_content/Soenneker.Blazor.Rrweb.Replay/js/rrwebreplayinterop.min.js";
     private readonly IResourceLoader _resourceLoader;
     private readonly IModuleImportUtil _moduleImportUtil;
     private readonly AsyncInitializer<bool> _initializer;
