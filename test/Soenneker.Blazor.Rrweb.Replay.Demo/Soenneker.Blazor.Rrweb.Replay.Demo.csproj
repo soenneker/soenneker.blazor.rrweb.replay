@@ -24,7 +24,7 @@
         </PackageReference>
         <PackageReference Include="Soenneker.Quark.Suite" Version="11.0.1702" />
         <PackageReference Include="Soenneker.Serilog.Sinks.Browser.Blazor" Version="11.0.444" />
-        <PackageReference Include="Soenneker.Utils.AutoBogus" Version="11.0.1004" />
+        <PackageReference Include="Soenneker.Utils.AutoBogus" Version="11.0.1005" />
     </ItemGroup>
 
     <ItemGroup>
